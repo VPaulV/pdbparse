@@ -4,7 +4,7 @@
 from io import BytesIO
 
 # Python 2 and 3: forward-compatible
-from builtins import range 
+from builtins import range
 
 from construct import *
 
@@ -13,7 +13,7 @@ _ALIGN = 4
 def get_parsed_size(tp,con):
     return len(tp.build(con))
 
-def SymbolRange(name): 
+def SymbolRange(name):
     return Struct(name,
         SLInt16("section"),
         Padding(2),
@@ -27,7 +27,7 @@ def SymbolRange(name):
     )
 
 DBIHeader = Struct("DBIHeader",
-    Const(Bytes("magic", 4), b"\xFF\xFF\xFF\xFF"),                          # 0
+    Const(Bytes(4).build("magic"), b"\xFF\xFF\xFF\xFF")                     # 0
     ULInt32("version"),                                                     # 4
     ULInt32("age"),                                                         # 8
     SLInt16("gssymStream"),                                                 # 12
@@ -131,7 +131,7 @@ def parse_stream(stream):
         sz = get_parsed_size(DBIExHeader,dbiexhdrs[-1])
         if sz % _ALIGN != 0: sz = sz + (_ALIGN - (sz % _ALIGN))
         dbiexhdr_data = dbiexhdr_data[sz:]
-    
+
     # "Section Contribution"
     stream.seek(dbihdr.secconSize, 1)
     # "Section Map"
@@ -164,7 +164,7 @@ def parse_stream(stream):
     stream.seek(dbihdr.ecinfoSize, 1)
     # The data we really want
     dbghdr = DbiDbgHeader.parse_stream(stream)
-    
+
     return Container(DBIHeader=dbihdr,
                      DBIExHeaders=ListContainer(dbiexhdrs),
                      DBIDbgHeader=dbghdr,
