@@ -4,33 +4,38 @@ from io import BytesIO
 from construct import *
 from pdbparse.tpi import merge_subcon
 
-gsym = Struct("global",
-    ULInt16("leaf_type"),
-    Embed(Switch("data", lambda ctx: ctx.leaf_type,
+gsym = "global"/Struct(
+    "leaf_type"/Int16ul,
+    "data"/Embed(Switch(lambda ctx: ctx.leaf_type,
         {
-            0x110E : Struct("data_v3",
-                ULInt32("symtype"),
-                ULInt32("offset"),
-                ULInt16("segment"),
-                CString("name", encoding="utf8"),
-            
+            0x110E : "data_v3"/Struct(,
+                "symtype"/Int32ul,
+                "offset"/Int32ul,
+                "segment"/Int16ul,
+                "name"/CString("utf8"),
+
             ),
-            0x1009 : Struct("data_v2",
-                ULInt32("symtype"),
-                ULInt32("offset"),
-                ULInt16("segment"),
-                PascalString("name", length_field=ULInt8("len")),
+            0x1009 : "data_v2"/Struct(
+                "symtype"/Int32ul,
+                "offset"/Int32ul,
+                "segment"/Int16ul,
+                "name"/PascalString(VarInt, "utf8"),
             ),
         },
         default = Pass,
     ))
 )
 
-GlobalsData = OptionalGreedyRange(
-    Tunnel(
-        PascalString("globals", length_field=ULInt16("len")),
-        gsym,
-    )
+#GlobalsData = OptionalGreedyRange(
+#    Tunnel(
+#        PascalString(VarInt, "utf16"),
+#        gsym,
+#    )
+#)
+
+GlobalsData = GreedyRange(
+    PascalString(VarInt, "utf16"),
+    gsym,
 )
 
 def parse(data):
