@@ -468,11 +468,11 @@ base_types = {
     "T_64NCVPTR" : 0x06f0, # CV Internal type for created near 64-bit pointers
 }
 
-base_type = Enum("base_type"/Int16ul, **base_types)
+base_type = "base_type"/Enum(Int16ul, **base_types)
 
 # Fewer than 255 values so we're ok here
 # Exported from https:#github.com/Microsoft/microsoft-pdb/cvinfo.h#L772
-leaf_type = Enum("leaf_type"/Int16ul,
+leaf_type = "leaf_type"/Enum(Int16ul,
     # leaf indices starting records but referenced from symbol records
     LF_MODIFIER_16t     = 0x0001,
     LF_POINTER_16t      = 0x0002,
@@ -959,14 +959,14 @@ lfModifier = "lfModifier"/Struct(
 lfPointer = "lfPointer"/Struct(
     "utype"/Int32ul,
     "ptr_attr"/BitStruct(
-        Enum("mode"/BitsInteger(3),
+        "mode"/Enum(BitsInteger(3),
             PTR_MODE_PTR         = 0x00000000,
             PTR_MODE_REF         = 0x00000001,
             PTR_MODE_PMEM        = 0x00000002,
             PTR_MODE_PMFUNC      = 0x00000003,
             PTR_MODE_RESERVED    = 0x00000004,
         ),
-        Enum("type"/BitsInteger(5),
+        "type"/Enum(BitsInteger(5),
             PTR_NEAR             = 0x00000000,
             PTR_FAR              = 0x00000001,
             PTR_HUGE             = 0x00000002,
@@ -1068,13 +1068,12 @@ Type = Debugger("type"/Struct(
 #is it TunnelAdapter?
 Types = "types"/Struct(
     "length"/Int16ul,
-     #Tunnel(
-    "type_data"/PaddedString(lambda ctx: ctx.length, "ascii"),
-        #Type,
-    #),
     #Tunnel(
-    Type,
+    #    "type_data"/PaddedString(lambda ctx: ctx.length, "ascii"),
+    #    Type,
     #),
+    "type_data"/PaddedString(lambda ctx: ctx.length, "ascii"),
+    Type,
 )
 
 ### Header structures
@@ -1106,7 +1105,7 @@ Header = "TPIHeader"/Struct(
 ### Stream as a whole
 TPIStream = "TPIStream"/Struct(
     Header,
-    Array(lambda ctx: ctx.TPIHeader.ti_max - ctx.TPIHeader.ti_min, Types),
+    "types"/Array(lambda ctx: ctx.TPIHeader.ti_max - ctx.TPIHeader.ti_min, Types),
 )
 
 ### END PURE CONSTRUCT DATA ###
