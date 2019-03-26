@@ -1064,17 +1064,17 @@ Type = Debugger("type"/Struct(
     ),
 ))
 
-#TODO: no idea what is going here? Didn't fint any Tunnel class in docs
+#TODO: no idea what is going on here? Didn't find any Tunnel class in docs
 #is it TunnelAdapter?
 Types = "types"/Struct(
     "length"/Int16ul,
-     Tunnel(
-        "type_data"/PaddedString(lambda ctx: ctx.length, "ascii"),
+     #Tunnel(
+    "type_data"/PaddedString(lambda ctx: ctx.length, "ascii"),
         #Type,
-    ),
-    Tunnel(
-        Type,
-    ),
+    #),
+    #Tunnel(
+    Type,
+    #),
 )
 
 ### Header structures
