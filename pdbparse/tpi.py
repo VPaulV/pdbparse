@@ -468,13 +468,12 @@ base_types = {
     "T_64NCVPTR" : 0x06f0, # CV Internal type for created near 64-bit pointers
 }
 
-base_type = Enum(ULInt16("base_type"), **base_types)
+base_type = Enum("base_type"/Int16ul, **base_types)
 
 # Fewer than 255 values so we're ok here
 # Exported from https:#github.com/Microsoft/microsoft-pdb/cvinfo.h#L772
-leaf_type = Enum(ULInt16("leaf_type"),
+leaf_type = Enum("leaf_type"/Int16ul,
     # leaf indices starting records but referenced from symbol records
-
     LF_MODIFIER_16t     = 0x0001,
     LF_POINTER_16t      = 0x0002,
     LF_ARRAY_16t        = 0x0003,
@@ -664,7 +663,7 @@ leaf_type = Enum(ULInt16("leaf_type"),
     LF_UTF8STRING       = 0x801b,
 
     LF_REAL16           = 0x801c,
-    
+
     LF_PAD0             = 0xf0,
     LF_PAD1             = 0xf1,
     LF_PAD2             = 0xf2,
@@ -686,11 +685,11 @@ leaf_type = Enum(ULInt16("leaf_type"),
 ### CodeView bitfields and enums
 # NOTE: Construct assumes big-endian
 # ordering for BitStructs
-CV_fldattr = BitStruct("fldattr",
-    Flag("noconstruct"),
-    Flag("noinherit"),
-    Flag("pseudo"),
-    Enum(BitField("mprop", 3),
+CV_fldattr = "fldattr"/BitStruct(
+    "noconstruct"/Flag,
+    "noinherit"/Flag,
+    "pseudo"/Flag,
+    Enum("mprop"/BitsInteger(3),
         MTvanilla   = 0x00,
         MTvirtual   = 0x01,
         MTstatic    = 0x02,
@@ -700,7 +699,7 @@ CV_fldattr = BitStruct("fldattr",
         MTpureintro = 0x06,
         _default_   = Pass,
     ),
-    Enum(BitField("access", 2),
+    Enum("access"/BitsInteger(2),
         private    = 1,
         protected  = 2,
         public     = 3,
@@ -708,10 +707,10 @@ CV_fldattr = BitStruct("fldattr",
     ),
 
     Padding(7),
-    Flag("compgenx"),
+    "compgenx"/Flag,
 )
 
-CV_call = Enum(ULInt8("call_conv"),
+CV_call = Enum("call_conv"/Int8ul,
     NEAR_C          = 0x00000000,
     FAR_C           = 0x00000001,
     NEAR_PASCAL     = 0x00000002,
@@ -738,47 +737,47 @@ CV_call = Enum(ULInt8("call_conv"),
     _default_       = Pass,
 )
 
-CV_property = BitStruct("prop",
-    Flag("fwdref"),
-    Flag("opcast"),
-    Flag("opassign"),
-    Flag("cnested"),
-    Flag("isnested"),
-    Flag("ovlops"),
-    Flag("ctor"),
-    Flag("packed"),
+CV_property = "prop"/BitStruct(
+    "fwdref"/Flag,
+    "opcast"/Flag,
+    "opassign"/Flag,
+    "cnested"/Flag,
+    "isnested"/Flag,
+    "ovlops"/Flag,
+    "ctor"/Flag,
+    "packed"/Flag,
 
-    BitField("reserved", 7, swapped=True),
-    Flag("scoped"),
+    "reserved"/BitsInteger(7, swapped=True),
+    "scoped"/Flag,
 )
 
 def val(name):
-    return Struct("value",
-        Value("_value_name", lambda ctx: name),
-        ULInt16("value_or_type"),
-        IfThenElse("name_or_val", lambda ctx: ctx.value_or_type < leaf_type._encode("LF_CHAR",ctx),
-            CString("name", encoding="utf8"),
-            Switch("val", lambda ctx: leaf_type._decode(ctx.value_or_type, {}),
+    return "value"/Struct(
+        "_value_name"/Computed(lambda ctx: name),
+        "value_or_type"/Int16ul,
+        "name_or_val"/IfThenElse(lambda ctx: ctx.value_or_type < leaf_type._encode("LF_CHAR",ctx),
+            "name"/CString("utf8"),
+            "val"/Switch(lambda ctx: leaf_type._decode(ctx.value_or_type, {}),
                 {
-                    "LF_CHAR": Struct("char",
-                        SLInt8("value"),
-                        CString("name", encoding="utf8"),
+                    "LF_CHAR": "char"/Struct(
+                        "value"/Int8sl,
+                        "name"/CString("utf8"),
                     ),
-                    "LF_SHORT": Struct("short",
-                        SLInt16("value"),
-                        CString("name", encoding="utf8"),
+                    "LF_SHORT": "short"/Struct(
+                        "value"/Int16sl,
+                        "name"/CString("utf8"),
                     ),
-                    "LF_USHORT": Struct("ushort",
-                        ULInt16("value"),
-                        CString("name", encoding="utf8"),
+                    "LF_USHORT": "ushort"/Struct(
+                        "value"/Int16ul,
+                        "name"/CString("utf8"),
                     ),
-                    "LF_LONG": Struct("char",
-                        SLInt32("value"),
-                        CString("name", encoding="utf8"),
+                    "LF_LONG": "char"/Struct(
+                        "value"/Int32sl,
+                        "name"/CString("utf8"),
                     ),
-                    "LF_ULONG": Struct("char",
-                        ULInt32("value"),
-                        CString("name", encoding="utf8"),
+                    "LF_ULONG": "char"/Struct(
+                        "value"/Int32ul,
+                        "name"/CString("utf8"),
                     ),
                 },
             ),
@@ -790,184 +789,184 @@ PadAlign = If(lambda ctx: ctx._pad != None and ctx._pad > 0xF0,
 )
 
 ### Leaf types
-subStruct = Struct("substructs",
+subStruct = "substructs"/Struct(
     leaf_type,
-    Switch("type_info", lambda ctx: ctx.leaf_type,
+    "type_info"/Switch(lambda ctx: ctx.leaf_type,
         {
-            "LF_MEMBER_ST": Struct("lfMemberST",
+            "LF_MEMBER_ST": "lfMemberST"/Struct(
                 CV_fldattr,
-                ULInt32("index"),
-                ULInt16("offset"),
-                PascalString("name"),
-                Peek(ULInt8("_pad")),
+                "index"/Int32ul,
+                "offset"/Int16ul,
+                "name"/PascalString(VarInt, "utf8"),
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_MEMBER": Struct("lfMember",
+            "LF_MEMBER": "lfMember"/Struct(
                 CV_fldattr,
-                ULInt32("index"),
+                "index"/Int32ul,
                 val("offset"),
-                Peek(ULInt8("_pad")),
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_ENUMERATE": Struct("lfEnumerate",
+            "LF_ENUMERATE": "lfEnumerate"/Struct(
                 CV_fldattr,
                 val("enum_value"),
-                Peek(ULInt8("_pad")),
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_BCLASS": Struct("lfBClass",
+            "LF_BCLASS": "lfBClass"/Struct(
                 CV_fldattr,
-                ULInt32("index"),
+                "index"/Int32ul,
                 val("offset"),
-                Peek(ULInt8("_pad")),
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_VFUNCTAB": Struct("lfVFuncTab",
+            "LF_VFUNCTAB": "lfVFuncTab"/Struct(
                 Padding(2),
-                ULInt32("type"),
-                Peek(ULInt8("_pad")),
+                "type"/Int32ul,
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_ONEMETHOD": Struct("lfOneMethod",
+            "LF_ONEMETHOD": "lfOneMethod"/Struct(
                 CV_fldattr,
-                ULInt32("index"),
-                Switch("intro", lambda ctx: ctx.fldattr.mprop,
+                "index"/Int32ul,
+                "intro"/Switch(lambda ctx: ctx.fldattr.mprop,
                     {
-                        "MTintro": Struct("value",
-                            ULInt32("val"),
-                            CString("str_data", encoding="utf8"),
+                        "MTintro": "value"/Struct(
+                            "val"/Int32ul,
+                            "str_data"/CString("utf8"),
                         ),
-                        "MTpureintro": Struct("value",
-                            ULInt32("val"),
-                            CString("str_data", encoding="utf8"),
+                        "MTpureintro": "value"/Struct(
+                            "val"/Int32ul,
+                            "str_data"/CString("utf8"),
                         ),
                     },
-                    default = CString("str_data", encoding="utf8"),
+                    default = "str_data"/CString("utf8"),
                 ),
-                Peek(ULInt8("_pad")),
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_METHOD": Struct("lfMethod",
-                ULInt16("count"),
-                ULInt32("mlist"),
-                CString("name", encoding="utf8"),
-                Peek(ULInt8("_pad")),
+            "LF_METHOD": "lfMethod"/Struct(
+                "count"/Int16ul,
+                "mlist"/Int32ul,
+                "name"/CString("utf8"),
+                Peek("_pad"/Int8ul),
                 PadAlign,
             ),
-            "LF_NESTTYPE": Struct("lfNestType",
+            "LF_NESTTYPE": "lfNestType"/Struct(
                 Padding(2),
-                ULInt32("index"),
-                CString("name", encoding="utf8"),
+                "index"/Int32ul,
+                "name"/CString(encoding="utf8"),
             ),
         },
     ),
 )
 
-lfFieldList = Struct("lfFieldList",
-    OptionalGreedyRange(subStruct)
+lfFieldList = "lfFieldList"/Struct(
+    GreedyRange(subStruct)
 )
 
-lfEnum = Struct("lfEnum",
-    ULInt16("count"),
+lfEnum = "lfEnum"/Struct(
+    "count"/Int16ul,
     CV_property,
-    ULInt32("utype"),
-    ULInt32("fieldlist"),
-    CString("name", encoding="utf8"),
-    Peek(ULInt8("_pad")),
+    "utype"/Int32ul,
+    "fieldlist"/Int32ul,
+    "name"/CString("utf8"),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfBitfield = Struct("lfBitfield",
-    ULInt32("base_type"),
-    ULInt8("length"),
-    ULInt8("position"),
-    Peek(ULInt8("_pad")),
+lfBitfield = "lfBitfield"/Struct(
+    "base_type"/Int32ul,
+    "length"/Int8ul,
+    "position"/Int8ul,
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfStructureST = Struct("lfStructureST",
-    ULInt16("count"),
+lfStructureST = "lfStructureST"/Struct(
+    "count"/Int16ul,
     CV_property,
-    ULInt32("fieldlist"),
-    ULInt32("derived"),
-    ULInt32("vshape"),
-    ULInt16("size"),
-    PascalString("name"),
-    Peek(ULInt8("_pad")),
+    "fieldlist"/Int32ul,
+    "derived"/Int32ul,
+    "vshape"/Int32ul,
+    "size"/Int16ul,
+    "name"/PascalString(VarInt, "utf8"),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfStructure = Struct("lfStructure",
-    ULInt16("count"),
+lfStructure = "lfStructure"/Struct(
+    "count"/Int16ul,
     CV_property,
-    ULInt32("fieldlist"),
-    ULInt32("derived"),
-    ULInt32("vshape"),
+    "fieldlist"/Int32ul,
+    "derived"/Int32ul,
+    "vshape"/Int32ul,
     val("size"),
-    Peek(ULInt8("_pad")),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfClass = Rename("lfClass", lfStructure)
+lfClass = "lfClass"/lfStructure
 
-lfArray = Struct("lfArray",
-    ULInt32("element_type"),
-    ULInt32("index_type"),
+lfArray = "lfArray"/Struct(
+    "element_type"/Int32ul,
+    "index_type"/Int32ul,
     val("size"),
-    Peek(ULInt8("_pad")),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfArrayST = Struct("lfArray",
-    ULInt32("element_type"),
-    ULInt32("index_type"),
-    ULInt16("size"),
-    PascalString("name"),
-    Peek(ULInt8("_pad")),
+lfArrayST = "lfArray"/Struct(
+    "element_type"/Int32ul,
+    "index_type"/Int32ul,
+    "size"/Int16ul,
+    "name"/PascalString(VarInt, "utf8"),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfArgList = Struct("lfArgList",
-    ULInt32("count"),
-    Array(lambda ctx: ctx.count, ULInt32("arg_type")),
-    Peek(ULInt8("_pad")),
+lfArgList = "lfArgList"/Struct(
+    "count"/Int32ul,
+    Array(lambda ctx: ctx.count, "arg_type"/Int32ul),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfProcedure = Struct("lfProcedure",
-    ULInt32("return_type"),
+lfProcedure = "lfProcedure"/Struct(
+    "return_type"/Int32ul,
     CV_call,
-    ULInt8("reserved"),
-    ULInt16("parm_count"),
-    ULInt32("arglist"),
-    Peek(ULInt8("_pad")),
+    "reserved"/Int8ul,
+    "parm_count"/Int16ul,
+    "arglist"/Int32ul,
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfModifier = Struct("lfModifier",
-    ULInt32("modified_type"),
-    BitStruct("modifier",
+lfModifier = "lfModifier"/Struct(
+    "modified_type"/Int32ul,
+    "modifier"/BitStruct(
         Padding(5),
-        Flag("unaligned"),
-        Flag("volatile"),
-        Flag("const"),
+        "unaligned"/Flag,
+        "volatile"/Flag,
+        "const"/Flag,
         Padding(8),
     ),
-    Peek(ULInt8("_pad")),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfPointer = Struct("lfPointer",
-    ULInt32("utype"),
-    BitStruct("ptr_attr",
-        Enum(BitField("mode", 3),
+lfPointer = "lfPointer"/Struct(
+    "utype"/Int32ul,
+    "ptr_attr"/BitStruct(
+        Enum("mode"/BitsInteger(3),
             PTR_MODE_PTR         = 0x00000000,
             PTR_MODE_REF         = 0x00000001,
             PTR_MODE_PMEM        = 0x00000002,
             PTR_MODE_PMFUNC      = 0x00000003,
             PTR_MODE_RESERVED    = 0x00000004,
         ),
-        Enum(BitField("type", 5),
+        Enum("type"/BitsInteger(5),
             PTR_NEAR             = 0x00000000,
             PTR_FAR              = 0x00000001,
             PTR_HUGE             = 0x00000002,
@@ -984,65 +983,65 @@ lfPointer = Struct("lfPointer",
             PTR_UNUSEDPTR        = 0x0000000D,
         ),
         Padding(3),
-        Flag("restrict"),
-        Flag("unaligned"),
-        Flag("const"),
-        Flag("volatile"),
-        Flag("flat32"),
+        "restrict"/Flag,
+        "unaligned"/Flag,
+        "const"/Flag,
+        "volatile"/Flag,
+        "flat32"/Flag,
         Padding(16),
     ),
-    Peek(ULInt8("_pad")),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfUnion = Struct("lfUnion",
-    ULInt16("count"),
+lfUnion = "lfUnion"/Struct(
+    "count"/Int16ul,
     CV_property,
-    ULInt32("fieldlist"),
+    "fieldlist"/Int32ul,
     val("size"),
-    Peek(ULInt8("_pad")),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfUnionST = Struct("lfUnionST",
-    ULInt16("count"),
+lfUnionST = "lfUnionST"/Struct(
+    "count"/Int16ul,
     CV_property,
-    ULInt32("fieldlist"),
-    ULInt16("size"),
-    PascalString("name"),
-    Peek(ULInt8("_pad")),
+    "fieldlist"/Int32ul,
+    "size"/Int16ul,
+    "name"/PascalString(VarInt, "utf8"),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-lfMFunc = Struct("lfMFunc",
-    ULInt32("return_type"),
-    ULInt32("class_type"),
-    ULInt32("this_type"),
+lfMFunc = "lfMFunc"/Struct(
+    "return_type"/Int32ul,
+    "class_type"/Int32ul,
+    "this_type"/Int32ul,
     CV_call,
-    ULInt8("reserved"),
-    ULInt16("parm_count"),
-    ULInt32("arglist"),
-    SLInt32("thisadjust"),
-    Peek(ULInt8("_pad")),
+    "reserved"/Int8ul,
+    "parm_count"/Int16ul,
+    "arglist"/Int32ul,
+    "thisadjust"/Int32sl,
+    Peek("_pad"/Int8ul),
     PadAlign,
-) 
+)
 
-lfVTShape = Struct("lfVTShape",
-    ULInt16("count"),
-    BitStruct("vt_descriptors",
+lfVTShape = "lfVTShape"/Struct(
+    "count"/Int16ul,
+    "vt_descriptors"/BitStruct(
         Array(lambda ctx: ctx._.count,
-            BitField("vt_descriptors", 4)
+            "vt_descriptors"/BitsInteger(4)
         ),
         # Needed to align to a byte boundary
         Padding(lambda ctx: (ctx._.count % 2) * 4),
     ),
-    Peek(ULInt8("_pad")),
+    Peek("_pad"/Int8ul),
     PadAlign,
 )
 
-Type = Debugger(Struct("type",
+Type = Debugger("type"/Struct(
     leaf_type,
-    Switch("type_info", lambda ctx: ctx.leaf_type,
+    "type_info"/Switch(lambda ctx: ctx.leaf_type,
         {
             "LF_ARGLIST": lfArgList,
             "LF_ARRAY": lfArray,
@@ -1065,42 +1064,47 @@ Type = Debugger(Struct("type",
     ),
 ))
 
-Types = Struct("types",
-    ULInt16("length"),
+#TODO: no idea what is going here? Didn't fint any Tunnel class in docs
+#is it TunnelAdapter?
+Types = "types"/Struct(
+    "length"/Int16ul,
+     Tunnel(
+        "type_data"/PaddedString(lambda ctx: ctx.length, "ascii"),
+        #Type,
+    ),
     Tunnel(
-        String("type_data", lambda ctx: ctx.length),
         Type,
     ),
 )
 
 ### Header structures
 def OffCb(name):
-    return Struct(name,
-        SLInt32("off"),
-        SLInt32("cb"),
+    return name/Struct(
+        "off"/Int32sl,
+        "cb"/Int32sl,
     )
 
-TPI = Struct("TPIHash",
-    ULInt16("sn"),
+TPI = "TPIHash"/Struct(
+    "sn"/Int16ul,
     Padding(2),
-    SLInt32("HashKey"),
-    SLInt32("Buckets"),
+    "HashKey"/Int32sl,
+    "Buckets"/Int32sl,
     OffCb("HashVals"),
     OffCb("TiOff"),
     OffCb("HashAdj"),
 )
 
-Header = Struct("TPIHeader",
-    ULInt32("version"),
-    SLInt32("hdr_size"),
-    ULInt32("ti_min"),
-    ULInt32("ti_max"),
-    ULInt32("follow_size"),
+Header = "TPIHeader"/Struct(
+    "version"/Int32ul,
+    "hdr_size"/Int32sl,
+    "ti_min"/Int32ul,
+    "ti_max"/Int32ul,
+    "follow_size"/Int32ul,
     TPI,
 )
 
 ### Stream as a whole
-TPIStream = Struct("TPIStream",
+TPIStream = "TPIStream"/Struct(
     Header,
     Array(lambda ctx: ctx.TPIHeader.ti_max - ctx.TPIHeader.ti_min, Types),
 )
@@ -1125,16 +1129,16 @@ def merge_subcon(parent, subattr):
 
 def fix_value(leaf):
     """Translate the value member of a leaf node into a nicer form.
-    
+
     Due to limitations in construct, the inital parsed form of a value is:
-    
+
     value
       `- _value_name
       `- value_or_type
       `- name_or_val
 
-    OR 
-    
+    OR
+
     value
       `- _value_name
       `- value_or_type
@@ -1162,7 +1166,7 @@ def resolve_typerefs(leaf, types, min):
     corresponding type (base type or type defined in the TPI stream). The
     dictionary type_refs is used to determine which fields in the leaf node
     are references.
-    
+
     leaf: the leaf node to convert
     types: a dictionary of index->type mappings
     min: the value of tpi_min; that is, the lowest type index in the stream
@@ -1215,7 +1219,7 @@ def parse_stream(fp, unnamed_hack=True, elim_fwdrefs=True):
 
     """
     tpi_stream = TPIStream.parse_stream(fp)
-    
+
     # Postprocessing
     # 1. Index the types
     tpi_stream.types = dict(
@@ -1247,12 +1251,12 @@ def parse_stream(fp, unnamed_hack=True, elim_fwdrefs=True):
     min = tpi_stream.TPIHeader.ti_min
     for i in types:
         if types[i].leaf_type == "LF_FIELDLIST":
-            types[i].substructs = ListContainer([ 
+            types[i].substructs = ListContainer([
                 resolve_typerefs(t, types, min) for t in types[i].substructs
             ])
         else:
             types[i] = resolve_typerefs(types[i], types, min)
-    
+
     # 5. Standardize v2 leaf names to v7 convention
     for i in types:
         rename_2_7(types[i])
@@ -1278,7 +1282,7 @@ def parse_stream(fp, unnamed_hack=True, elim_fwdrefs=True):
         # Change any references to the fwdref to point to the real type
         for i in types:
             if types[i].leaf_type == "LF_FIELDLIST":
-                types[i].substructs = ListContainer([ 
+                types[i].substructs = ListContainer([
                     merge_fwdrefs(t, types, fwdref_map) for t in types[i].substructs
                 ])
             else:
@@ -1297,7 +1301,7 @@ def parse_stream(fp, unnamed_hack=True, elim_fwdrefs=True):
 
 def parse(data, unnamed_hack=True, elim_fwdrefs=True):
     return parse_stream(BytesIO(data), unnamed_hack, elim_fwdrefs)
-    
+
 if __name__ == "__main__":
     import sys
     import time
