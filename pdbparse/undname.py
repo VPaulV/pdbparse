@@ -27,7 +27,5 @@ def undname(name, flags = UNDNAME_COMPLETE):
         name = _undname.undname(name, flags)
     elif name.startswith("_") or name.startswith("@"):
         name = name.rsplit('@', 1)[0][1:]
-
-    print("FUCK")
-
+        
     return name
